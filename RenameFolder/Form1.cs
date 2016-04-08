@@ -18,6 +18,8 @@ namespace RenameFolder
     public partial class Form1 : Form
     {
         DfBTeam gbl_TeamObject;
+        FolderListing gbl_FolderListing;
+        String gbl_email_selected;
 
         [DataContract]
         class FolderListing
@@ -355,11 +357,12 @@ namespace RenameFolder
             // Set cursor as hourglass
             Cursor.Current = Cursors.WaitCursor;
 
-            FolderListing rootFolderListing = Get_listing("/", txtToken.Text, gbl_TeamObject.members[5].profile.member_id);
+            FolderListing rootFolderListing = Get_listing("/", txtToken.Text, getMemberId(gbl_email_selected));
+            gbl_FolderListing = rootFolderListing;
             foreach (FolderContent fc in rootFolderListing.contents)
             {
-                //if (fc.is_dir)
-                comboFolderList.Items.Add(fc.path);
+                if (fc.is_dir == "true")
+                    comboFolderList.Items.Add(fc.path);
             }
 
             //update the ui
@@ -380,6 +383,7 @@ namespace RenameFolder
         private void comboUserList_SelectedIndexChanged(object sender, EventArgs e)
         {
             txtTargetAccount.Text = comboUserList.Text;
+            gbl_email_selected = comboUserList.Text;
         }
 
         private FolderListing Get_listing(string folderpath, string dfb_token, string dfb_member_id)
@@ -447,6 +451,16 @@ namespace RenameFolder
             brokenListing.bytes = -1;
             return brokenListing;
         } //end of get_listing
+
+        private String getMemberId(String email)
+        {
+            foreach (Member m in gbl_TeamObject.members)
+            {
+                if (m.profile.email == email)
+                    return m.profile.member_id;
+            }
+            return null;
+        }
 
 
     }
