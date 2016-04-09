@@ -12,6 +12,7 @@ using System.Net;
 using System.IO;
 using System.Runtime.Serialization.Json;
 using Dropbox.Api;
+using RestSharp;
 
 namespace RenameFolder
 {
@@ -178,9 +179,6 @@ namespace RenameFolder
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            //set the disconnected picture
-            pictureBoxStatus.Image = imageList1.Images[1];
-
             //hide the stuff we dont need yet
             label2.Visible = false;
             comboUserList.Visible = false;
@@ -202,8 +200,6 @@ namespace RenameFolder
             //if we connect to the api successfully:
             if (teamInformation.num_licenced_users >= 0)
             {
-                //update the connected Image
-                pictureBoxStatus.Image = imageList1.Images[0];
 
                 //populate the global object for use throughout the app.
                 gbl_TeamObject = dfbTeam;
@@ -362,7 +358,11 @@ namespace RenameFolder
             foreach (FolderContent fc in rootFolderListing.contents)
             {
                 if (fc.is_dir == "true")
-                    comboFolderList.Items.Add(fc.path);
+                {
+                    String path = fc.path;
+                    comboFolderList.Items.Add(path.Remove(0,1));
+                }
+                    
             }
 
             //update the ui
@@ -372,8 +372,6 @@ namespace RenameFolder
             comboUserList.Visible = false;
             txtTargetAccount.Visible = true;
             txtTargetAccount.ReadOnly = true;
-
-            
 
             // Set cursor as hourglass
             Cursor.Current = Cursors.Default;
@@ -463,5 +461,67 @@ namespace RenameFolder
         }
 
 
+        private void rename_folder(String dfb_member_id)
+        {
+            var client = new RestClient("https://api.dropboxapi.com/1/");
+
+            var request = new RestRequest("fileops/move", Method.POST);
+
+            request.AddParameter("root", "auto");
+            request.AddParameter("from_path", comboFolderList.Text);
+            request.AddParameter("to_path", txtNewName.Text);
+
+            String authheader = "Bearer " + txtToken.Text;
+            request.AddHeader("Authorization", authheader);
+            request.AddHeader("X-Dropbox-Perform-As-Team-Member", dfb_member_id);
+
+            try
+            {
+                // execute the request
+                IRestResponse response = client.Execute(request);
+                var content = response.Content; // raw content as string
+            }
+
+            catch
+            {
+                Console.Write("fail");
+            }
+
+
+        }
+
+        private void comboFolderList_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            txtNewName.Visible = true;
+            label3.Visible = true;
+            btnRename.Visible = true;
+        }
+
+        private void txtNewName_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnRename_Click(object sender, EventArgs e)
+        {
+            // Set cursor as hourglass
+            Cursor.Current = Cursors.WaitCursor;
+
+            //hide the button
+            btnRename.Visible = false;
+
+            //disable text field
+            txtNewName.ReadOnly = true;
+
+            //rename
+            rename_folder(getMemberId(gbl_email_selected));
+
+            // Set cursor as normal
+            Cursor.Current = Cursors.Default;
+
+            //show success
+            label4.Visible = true;
+
+        }
     }
 }
